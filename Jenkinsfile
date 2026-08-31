@@ -111,11 +111,12 @@ pipeline {
                             # Initialize with backend config
                             
                             terraform init \
-                            -backend-config="bucket=terraform-state-rds-platform-dev" \
-                            -backend-config="key=rds-platform/dev/terraform.tfstate" \
-                            -backend-config="region=us-east-1" \
-                            -backend-config="encrypt=true" \
-                            -backend-config="dynamodb_table=terraform-state-lock-rds-platform -upgrade"
+                                    -backend-config="bucket=terraform-state-rds-platform-dev" \
+                                    -backend-config="key=rds-platform/dev/terraform.tfstate" \
+                                    -backend-config="region=us-east-1" \
+                                    -backend-config="encrypt=true" \
+                                    -backend-config="dynamodb_table=terraform-state-lock-rds-platform" \
+                                    -upgrade
   
 
                             
@@ -171,9 +172,10 @@ pipeline {
                 ]]) {
                         sh '''
                             terraform plan \
-                                -var-file="terraform.tfvars" \
-                                -out=tfplan \
-                                -detailed-exitcode || EXIT_CODE=$?
+                            -var-file="terraform.tfvars" \
+                            -out=tfplan \
+                            -detailed-exitcode || EXIT_CODE=$?
+
                             
                             if [ $EXIT_CODE -eq 0 ]; then
                                 echo "No changes detected"
@@ -234,10 +236,12 @@ pipeline {
                         echo "Applying Terraform changes..."
                     }
                     
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials'
-                    ]]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                         sh '''
                             terraform apply -auto-approve tfplan
                             
