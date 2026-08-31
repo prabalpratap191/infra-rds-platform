@@ -129,7 +129,7 @@ pipeline {
         
         stage('Terraform Validate') {
             steps {
-                dir("${WORKSPACE_DIR}") {
+                dir("terraform") {
                     script {
                         echo "Validating Terraform configuration..."
                     }
@@ -158,7 +158,7 @@ pipeline {
                 expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
             }
             steps {
-                dir("${WORKSPACE_DIR}") {
+                dir("terraform") {
                     script {
                         echo "Creating Terraform execution plan..."
                     }
@@ -229,7 +229,7 @@ pipeline {
                 expression { params.ACTION == 'apply' }
             }
             steps {
-                dir("${WORKSPACE_DIR}") {
+                dir("terraform") {
                     script {
                         echo "Applying Terraform changes..."
                     }
@@ -255,7 +255,7 @@ pipeline {
                 expression { params.ACTION == 'destroy' }
             }
             steps {
-                dir("${WORKSPACE_DIR}") {
+                dir("terraform") {
                     script {
                         echo "WARNING: Destroying infrastructure in ${params.ENVIRONMENT}..."
                     }
@@ -283,7 +283,7 @@ pipeline {
                 expression { params.ACTION == 'apply' }
             }
             steps {
-                dir("${WORKSPACE_DIR}") {
+                dir("terraform") {
                     script {
                         echo "Publishing Terraform outputs..."
                     }
@@ -316,7 +316,7 @@ pipeline {
                 expression { params.ACTION == 'apply' }
             }
             steps {
-                dir("${WORKSPACE}") {
+                dir("terraform") {
                     script {
                         echo "Running deployment verification..."
                     }
