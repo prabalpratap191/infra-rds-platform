@@ -60,14 +60,18 @@ resource "aws_db_parameter_group" "this" {
     value = "1000" # Log queries taking more than 1 second
   }
   
+  # max_connections is a static parameter requiring DB restart
   parameter {
-    name  = "max_connections"
-    value = "200"
+    name         = "max_connections"
+    value        = "200"
+    apply_method = "pending-reboot"
   }
   
+  # shared_buffers is a static parameter requiring DB restart
   parameter {
-    name  = "shared_buffers"
-    value = "{DBInstanceClassMemory/32768}" # 25% of RAM
+    name         = "shared_buffers"
+    value        = "{DBInstanceClassMemory/32768}" # 25% of RAM
+    apply_method = "pending-reboot"
   }
   
   parameter {
