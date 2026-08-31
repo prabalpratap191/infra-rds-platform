@@ -16,7 +16,8 @@ private_subnet_ids = [
 
 # Security Groups
 # REQUIRED: Update with your actual security group IDs
-eks_security_group_id     = "eks-cluster-sg*"  # EKS worker nodes security group
+# EKS node security group ID (most recent: meracommerce-dev-cluster-node)
+eks_security_group_id     = "sg-0b25d44dfad6b21f4"  # EKS worker nodes security group
 bastion_security_group_id = ""  # Bastion host security group (optional)
 additional_security_group_ids = []  # Add any additional security groups
 

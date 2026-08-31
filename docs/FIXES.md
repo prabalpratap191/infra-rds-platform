@@ -490,5 +490,205 @@ resource "aws_instance" "example" {
 
 ---
 
+# Invalid EKS Security Group ID Error
+
+## Issue
+
+Terraform apply was failing during security group rule creation:
+
+```
+Error: authorizing Security Group (sg-00f96022d17289520) Rule (sgrule-2385737399): 
+operation error EC2: AuthorizeSecurityGroupIngress, https response error StatusCode: 400, 
+api error InvalidGroupId.Malformed: Invalid id: "eks-cluster-sg*" (expecting "sg-...")
+
+  with module.security_group.aws_security_group_rule.rds_ingress_eks,
+  on modules/security-group/main.tf line 18, in resource "aws_security_group_rule" "rds_ingress_eks"
+```
+
+## Root Cause
+
+**File**: `terraform/terraform.tfvars` (Line 19)
+
+**Problem**: The `eks_security_group_id` variable was set to a **wildcard pattern** instead of an actual AWS security group ID:
+
+```hcl
+eks_security_group_id = "eks-cluster-sg*"  # ❌ Pattern, not a real ID
+```
+
+**Why**: AWS security group IDs must be in the format `sg-xxxxxxxxxxxxxxxxx` (17 characters after the hyphen). Wildcards and patterns are not valid.
+
+## Fix Applied
+
+**File**: `terraform/terraform.tfvars`
+
+**Before**:
+```hcl
+eks_security_group_id = "eks-cluster-sg*"
+```
+
+**After**:
+```hcl
+eks_security_group_id = "sg-0b25d44dfad6b21f4"  # EKS node security group
+```
+
+**Security Group Used**:
+- **ID**: `sg-0b25d44dfad6b21f4`
+- **Name**: `meracommerce-dev-cluster-node-20260831042918951900000003`
+- **Type**: EKS node shared security group
+- **Description**: EKS node shared security group
+- **VPC**: `vpc-04c700d412f86947c`
+
+**Why this security group**:
+- This is the EKS **node** security group (not cluster SG)
+- Pods run on EKS worker nodes
+- RDS must allow traffic from worker nodes, not the control plane
+- This is the most recent EKS node security group in the VPC
+
+## How to Find EKS Security Group ID
+
+### Method 1: Automated Script
+
+A helper script has been created:
+
+```bash
+cd scripts
+chmod +x find-eks-security-group.sh
+./find-eks-security-group.sh
+```
+
+**Output**:
+```
+EKS Node Security Groups:
+-----------------------------------------
+sg-0b25d44dfad6b21f4 | meracommerce-dev-cluster-node-... | EKS node shared security group
+
+Recommended: eks_security_group_id = "sg-0b25d44dfad6b21f4"
+```
+
+### Method 2: AWS CLI
+
+```bash
+# Find EKS node security groups in your VPC
+aws ec2 describe-security-groups \
+  --region us-east-1 \
+  --filters "Name=vpc-id,Values=vpc-04c700d412f86947c" \
+            "Name=description,Values=*EKS node*" \
+  --query 'SecurityGroups[*].[GroupId,GroupName]' \
+  --output table
+
+# Get the most recent one
+aws ec2 describe-security-groups \
+  --region us-east-1 \
+  --filters "Name=vpc-id,Values=vpc-04c700d412f86947c" \
+            "Name=description,Values=*EKS node*" \
+  --query 'sort_by(SecurityGroups, &GroupName)[-1].GroupId' \
+  --output text
+```
+
+### Method 3: AWS Console
+
+1. Navigate to **EC2 Console** → **Security Groups**
+2. Filter by VPC: `vpc-04c700d412f86947c`
+3. Look for description: **"EKS node shared security group"**
+4. Choose the most recent one
+5. Copy the Security Group ID
+
+## Available EKS Security Groups
+
+Found in VPC `vpc-04c700d412f86947c`:
+
+| Security Group ID | Type | Description | Status |
+|-------------------|------|-------------|--------|
+| `sg-0b25d44dfad6b21f4` | EKS Node | EKS node shared security group | ✅ **Used** |
+| `sg-0d597d212e2d1323f` | EKS Node | EKS node shared security group | Older |
+| `sg-07eab55c6c38ad79d` | EKS Cluster | EKS cluster security group | Not for RDS |
+| `sg-0b5673d274df4dc70` | EKS Cluster | EKS cluster security group | Not for RDS |
+
+**Note**: Use EKS **Node** security groups for RDS access, not Cluster security groups.
+
+## Verification Steps
+
+```bash
+cd terraform
+
+# Validate configuration
+terraform validate
+
+# Generate plan
+terraform plan -out=tfplan
+
+# Check for errors
+# Should see: No "InvalidGroupId.Malformed" errors
+```
+
+**Expected in plan**:
+```
+# module.security_group.aws_security_group_rule.rds_ingress_eks will be created
++ resource "aws_security_group_rule" "rds_ingress_eks" {
+    + source_security_group_id = "sg-0b25d44dfad6b21f4"  # ✅ Valid format
+  }
+```
+
+## Files Modified
+
+1. **terraform/terraform.tfvars**
+   - Replaced `"eks-cluster-sg*"` with `"sg-0b25d44dfad6b21f4"`
+   - Added comment explaining the security group
+
+2. **scripts/find-eks-security-group.sh** (NEW)
+   - Automated script to discover EKS security groups
+   - Recommends the most recent EKS node security group
+
+3. **docs/EKS_SECURITY_GROUP_FIX.md** (NEW)
+   - Comprehensive guide for EKS security group configuration
+   - Multiple methods to find the correct security group
+   - Best practices and troubleshooting
+
+## Best Practices
+
+### ❌ Never Use Patterns in terraform.tfvars
+
+```hcl
+# DON'T
+eks_security_group_id = "eks-cluster-sg*"  # ❌ Wildcard
+eks_security_group_id = "*node*"           # ❌ Pattern
+eks_security_group_id = "sg-XXXXX"         # ❌ Placeholder
+```
+
+### ✅ Always Use Actual AWS IDs
+
+```hcl
+# DO
+eks_security_group_id = "sg-0b25d44dfad6b21f4"  # ✅ Actual ID
+
+# OR use data source for dynamic lookup
+data "aws_security_group" "eks_nodes" {
+  vpc_id = var.vpc_id
+  filter {
+    name   = "description"
+    values = ["EKS node shared security group"]
+  }
+}
+
+eks_security_group_id = data.aws_security_group.eks_nodes.id
+```
+
+### Required Variables Checklist
+
+Before running Terraform, ensure these are set with **actual values**:
+
+- [ ] `vpc_id` - Actual VPC ID (e.g., `vpc-04c700d412f86947c`)
+- [ ] `private_subnet_ids` - List of actual subnet IDs
+- [ ] `eks_security_group_id` - Actual EKS node security group ID
+- [ ] All values in format `<resource>-<random_string>`, not patterns
+
+## Additional Resources
+
+- [EKS Security Group Fix Guide](EKS_SECURITY_GROUP_FIX.md)
+- [find-eks-security-group.sh](../scripts/find-eks-security-group.sh)
+- [AWS EKS Security Groups](https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html)
+
+---
+
 **Last Updated**: 2026-08-31  
 **Status**: ✅ Fixed and Tested
