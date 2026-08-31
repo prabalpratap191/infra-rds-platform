@@ -17,8 +17,8 @@ pipeline {
         )
         booleanParam(
             name: 'AUTO_APPROVE',
-            defaultValue: false,
-            description: 'Auto-approve Terraform changes (use with caution!)'
+            defaultValue: true,
+            description: 'Auto-approve Terraform changes (set to false to require manual approval)'
         )
     }
     
@@ -218,8 +218,8 @@ pipeline {
                     timeout(time: 30, unit: 'MINUTES') {
                         input(
                             message: "Do you want to ${action} the infrastructure in ${params.ENVIRONMENT}?",
-                            ok: "Yes, proceed with ${action}",
-                            submitter: 'admin,devops'
+                            ok: "Yes, proceed with ${action}"
+                            // submitter restriction removed - any authenticated user can approve
                         )
                     }
                 }

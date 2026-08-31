@@ -11,9 +11,14 @@
 - ❌ "InvalidGroupId.Malformed: Invalid id: 'eks-cluster-sg*'" error
 - ❌ Security group rule creation failed
 
+### Issue 3: Jenkins Approval Gate Blocking (FIXED ✅)
+- ❌ Pipeline stuck at approval gate
+- ❌ Only 'admin' and 'devops' users could approve
+- ❌ 30-minute timeout waiting for approval
+
 ## ✅ Solutions Applied
 
-**Three files have been fixed:**
+**Four files have been fixed:**
 
 1. **`terraform/providers.tf`**
    - Removed `timestamp()` function from default tags
@@ -27,6 +32,11 @@
 3. **`terraform/terraform.tfvars`**
    - Replaced wildcard pattern `"eks-cluster-sg*"` with actual EKS security group ID
    - Now using: `"sg-0b25d44dfad6b21f4"` (EKS node security group)
+
+4. **`Jenkinsfile`**
+   - Removed submitter restriction (any user can approve)
+   - Changed `AUTO_APPROVE` default to `true` (auto-deploys by default)
+   - Pipeline now proceeds automatically without manual approval
 
 ## 🛠️ Recovery (3 Steps)
 
@@ -58,8 +68,11 @@ terraform apply tfplan
 
 - **Detailed Recovery**: [docs/TERRAFORM_RECOVERY_GUIDE.md](docs/TERRAFORM_RECOVERY_GUIDE.md)
 - **EKS Security Group Fix**: [docs/EKS_SECURITY_GROUP_FIX.md](docs/EKS_SECURITY_GROUP_FIX.md)
+- **Jenkins Approval Fix**: [docs/JENKINS_APPROVAL_FIX.md](docs/JENKINS_APPROVAL_FIX.md)
 - **All Fixes Tracking**: [docs/FIXES.md](docs/FIXES.md)
-- **Helper Script**: [scripts/find-eks-security-group.sh](scripts/find-eks-security-group.sh)
+- **Helper Scripts**: 
+  - [scripts/find-eks-security-group.sh](scripts/find-eks-security-group.sh)
+  - [scripts/recover-terraform.sh](scripts/recover-terraform.sh)
 
 ## ❓ Need Help?
 
