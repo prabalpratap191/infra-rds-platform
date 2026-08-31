@@ -1,0 +1,162 @@
+# Spring Boot Database Configuration Examples
+# Copy relevant sections to your microservice application.properties
+
+# ============================================================================
+# CUSTOMER SERVICE - application.properties
+# ============================================================================
+
+# Database Connection
+spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:customer_db}?sslmode=require
+spring.datasource.username=${DB_USERNAME:customer_user}
+spring.datasource.password=${DB_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# Connection Pool (HikariCP)
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.idle-timeout=600000
+spring.datasource.hikari.max-lifetime=1800000
+spring.datasource.hikari.connection-test-query=SELECT 1
+
+# JPA / Hibernate
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+spring.jpa.properties.hibernate.jdbc.batch_size=20
+spring.jpa.properties.hibernate.order_inserts=true
+spring.jpa.properties.hibernate.order_updates=true
+
+# Flyway Migration (if using)
+spring.flyway.enabled=true
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+
+# Logging
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+logging.level.com.zaxxer.hikari=INFO
+
+# ============================================================================
+# KUBERNETES DEPLOYMENT ENVIRONMENT VARIABLES
+# ============================================================================
+
+# These environment variables are injected by Kubernetes from:
+# - ConfigMap: customer-db-config
+# - Secret: customer-db-credentials (from External Secrets)
+
+# DB_HOST=rds-platform-dev-postgres.xxxxxx.us-east-1.rds.amazonaws.com
+# DB_PORT=5432
+# DB_NAME=customer_db
+# DB_USERNAME=customer_user
+# DB_PASSWORD=<from-secrets-manager>
+# DB_DRIVER=org.postgresql.Driver
+# DB_DIALECT=org.hibernate.dialect.PostgreSQLDialect
+
+# ============================================================================
+# DEPLOYMENT YAML EXAMPLE
+# ============================================================================
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: customer-service
+#   namespace: customer-service-ns
+# spec:
+#   replicas: 3
+#   template:
+#     spec:
+#       containers:
+#       - name: customer-service
+#         image: customer-service:latest
+#         env:
+#         # From ConfigMap
+#         - name: DB_HOST
+#           valueFrom:
+#             configMapKeyRef:
+#               name: customer-db-config
+#               key: DB_HOST
+#         - name: DB_PORT
+#           valueFrom:
+#             configMapKeyRef:
+#               name: customer-db-config
+#               key: DB_PORT
+#         - name: DB_NAME
+#           valueFrom:
+#             configMapKeyRef:
+#               name: customer-db-config
+#               key: DB_NAME
+#         # From Secret (External Secrets)
+#         - name: DB_USERNAME
+#           valueFrom:
+#             secretKeyRef:
+#               name: customer-db-credentials
+#               key: username
+#         - name: DB_PASSWORD
+#           valueFrom:
+#             secretKeyRef:
+#               name: customer-db-credentials
+#               key: password
+
+# ============================================================================
+# ORDER SERVICE - application.properties
+# ============================================================================
+
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+
+# ============================================================================
+# CATALOG SERVICE - application.properties
+# ============================================================================
+
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+
+# ============================================================================
+# ORDER HISTORY SERVICE - application.properties
+# ============================================================================
+
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+
+# ============================================================================
+# NOTIFICATION SERVICE - application.properties
+# ============================================================================
+
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+
+# ============================================================================
+# HEALTH CHECK CONFIGURATION
+# ============================================================================
+
+management.endpoints.web.exposure.include=health,metrics,prometheus
+management.endpoint.health.show-details=always
+management.health.db.enabled=true
+
+# ============================================================================
+# PRODUCTION BEST PRACTICES
+# ============================================================================
+
+# Connection Pool Tuning
+# Formula: connections = ((core_count * 2) + effective_spindle_count)
+# Example: 4 cores + 1 disk = 10 connections
+spring.datasource.hikari.maximum-pool-size=10
+
+# Prevent connection leaks
+spring.datasource.hikari.leak-detection-threshold=60000
+
+# SSL Configuration
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require&sslrootcert=/path/to/rds-ca-2019-root.pem
+
+# Read-only replica (if configured)
+spring.datasource.replica.url=jdbc:postgresql://${DB_REPLICA_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+
+# Multi-tenancy support
+spring.jpa.properties.hibernate.multiTenancy=SCHEMA

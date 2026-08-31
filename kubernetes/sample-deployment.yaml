@@ -1,0 +1,223 @@
+# Sample Kubernetes Deployment for Customer Service
+# This demonstrates how to use ConfigMaps and Secrets for database connectivity
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: customer-service-ns
+  labels:
+    app: customer-service
+    environment: dev
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-service
+  namespace: customer-service-ns
+  labels:
+    app: customer-service
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: customer-service
+  template:
+    metadata:
+      labels:
+        app: customer-service
+        version: v1
+    spec:
+      serviceAccountName: customer-service-sa
+      containers:
+      - name: customer-service
+        image: <your-registry>/customer-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        
+        # Environment variables from ConfigMap (non-sensitive)
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: customer-db-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: customer-db-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: customer-db-config
+              key: DB_NAME
+        - name: DB_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              name: customer-db-config
+              key: DB_DRIVER
+        - name: DB_DIALECT
+          valueFrom:
+            configMapKeyRef:
+              name: customer-db-config
+              key: DB_DIALECT
+        
+        # Environment variables from Secret (sensitive)
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: customer-db-credentials
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: customer-db-credentials
+              key: password
+        
+        # Application configuration
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        - name: JAVA_OPTS
+          value: "-Xms512m -Xmx1024m -XX:+UseG1GC"
+        
+        # Health check probes
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Resource limits
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        
+        # Security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-service
+  namespace: customer-service-ns
+  labels:
+    app: customer-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: customer-service
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: customer-service-sa
+  namespace: customer-service-ns
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<account-id>:role/customer-service-role
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: customer-service-hpa
+  namespace: customer-service-ns
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: customer-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: customer-service-pdb
+  namespace: customer-service-ns
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: customer-service
+
+---
+# Network Policy - Allow only ingress from same namespace and egress to RDS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: customer-service-netpol
+  namespace: customer-service-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: customer-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: customer-service-ns
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443   # HTTPS for AWS APIs
