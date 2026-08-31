@@ -140,7 +140,7 @@ variable "db_master_username" {
 variable "db_parameter_family" {
   description = "Database parameter group family"
   type        = string
-  default     = "postgres15"
+  default     = "postgres16"
 }
 
 # Microservices Database Configuration
