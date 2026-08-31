@@ -32,7 +32,7 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 
 # DB Parameter Group
 resource "aws_db_parameter_group" "this" {
-  name   = "${var.project_name}-${var.environment}-postgres-params"
+  name   = "${var.project_name}-${var.environment}-postgres16-params"
   family = var.parameter_group_family
   
   description = "Custom parameter group for ${var.project_name} ${var.environment}"
@@ -104,7 +104,7 @@ resource "aws_db_parameter_group" "this" {
   tags = merge(
     var.tags,
     {
-      Name = "${var.project_name}-${var.environment}-postgres-params"
+      Name = "${var.project_name}-${var.environment}-postgres16-params"
     }
   )
 }
