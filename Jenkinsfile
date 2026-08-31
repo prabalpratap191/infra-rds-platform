@@ -2,9 +2,7 @@
 // This pipeline handles Terraform deployment with proper gating and verification
 
 pipeline {
-    agent {
-        label 'terraform'
-    }
+   agent any
     
     parameters {
         choice(
