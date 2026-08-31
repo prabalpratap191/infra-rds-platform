@@ -23,7 +23,7 @@ additional_security_group_ids = []  # Add any additional security groups
 
 # RDS Instance Configuration
 db_instance_class       = "db.t3.medium"  # db.t3.small for minimal cost
-db_engine_version       = "16.15"  # Latest PostgreSQL 15.x version available in AWS RDS
+db_engine_version       = "16.15"  # Latest PostgreSQL 16.x version available in AWS RDS
 db_allocated_storage    = 100
 db_max_allocated_storage = 500
 db_storage_type         = "gp3"
@@ -34,7 +34,7 @@ publicly_accessible     = false  # Always false for security
 db_port            = 5432
 db_name            = "postgres"
 db_master_username = "postgres"
-db_parameter_family = "postgres15"
+db_parameter_family = "postgres16"
 
 # Backup Configuration
 backup_retention_period = 7
