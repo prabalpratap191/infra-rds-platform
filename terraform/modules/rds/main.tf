@@ -38,9 +38,11 @@ resource "aws_db_parameter_group" "this" {
   description = "Custom parameter group for ${var.project_name} ${var.environment}"
   
   # Performance and connection parameters
+  # Note: shared_preload_libraries is a static parameter requiring DB restart
   parameter {
-    name  = "shared_preload_libraries"
-    value = "pg_stat_statements"
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
+    apply_method = "pending-reboot"
   }
   
   parameter {
