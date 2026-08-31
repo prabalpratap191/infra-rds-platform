@@ -91,7 +91,7 @@ pipeline {
         
         stage('Terraform Init') {
             steps {
-                dir("${WORKSPACE_DIR}") {
+                dir('terraform') {
                     script {
                         echo "Initializing Terraform..."
                     }
@@ -103,21 +103,22 @@ pipeline {
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
                         sh '''
-                            # Copy backend configuration
-                            cp ../../backend.tf .
-                            cp ../../providers.tf .
-                            cp ../../variables.tf .
-                            cp ../../outputs.tf .
-                            cp ../../main.tf .
-                            
+                          
+                            # Verify modules are copied
+                            echo "Verifying modules directory:"
+                            ls -la modules/
+
                             # Initialize with backend config
+                            
                             terraform init \
-                                -backend-config="bucket=terraform-state-rds-platform-${ENVIRONMENT}" \
-                                -backend-config="key=rds-platform/${ENVIRONMENT}/terraform.tfstate" \
-                                -backend-config="region=${AWS_REGION}" \
-                                -backend-config="encrypt=true" \
-                                -backend-config="dynamodb_table=terraform-state-lock-rds-platform" \
-                                -upgrade
+                            -backend-config="bucket=terraform-state-rds-platform-dev" \
+                            -backend-config="key=rds-platform/dev/terraform.tfstate" \
+                            -backend-config="region=us-east-1" \
+                            -backend-config="encrypt=true" \
+                            -backend-config="dynamodb_table=terraform-state-lock-rds-platform -upgrade"
+  
+
+                            
                             
                             echo "Terraform initialized successfully"
                         '''
