@@ -374,7 +374,7 @@ pipeline {
                 deleteDirs: true,
                 patterns: [
                     [pattern: '**/*.tfplan', type: 'INCLUDE'],
-                    [pattern: '**/.terraform', type: 'INCLUDE']
+                    [pattern: '**/.terraform/**', type: 'INCLUDE']
                 ]
             )
         }
