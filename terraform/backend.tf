@@ -7,13 +7,11 @@ terraform {
     key            = "rds-platform/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
-    dynamodb_table = "terraform-state-lock-rds-platform"
+    use_lockfile   = true
     
-    # Server-side encryption
-    kms_key_id = "alias/terraform-state-key"
-    
-    # Versioning for state recovery
-    versioning = true
+    # Note: KMS encryption removed - using default S3 encryption (AES256)
+    # If KMS is required, create the key first:
+    # aws kms create-alias --alias-name alias/terraform-state-key --target-key-id <key-id>
   }
   
   required_version = ">= 1.5.0"

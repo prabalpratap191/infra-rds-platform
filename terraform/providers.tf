@@ -8,10 +8,6 @@ provider "aws" {
       Environment   = var.environment
       Project       = "RDS-Platform"
       ManagedBy     = "Terraform"
-      Owner         = "DevOps"
-      CostCenter    = "Engineering"
-      Repository    = "infra-rds-platform"
-      LastUpdated   = timestamp()
     }
   }
 }
