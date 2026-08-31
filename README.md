@@ -127,13 +127,15 @@ terraform apply
 
 ### Jenkins Deployment
 
-1. Configure Jenkins credentials:
-   - AWS credentials (aws-credentials)
-   - SSH key for repository access
+**See [docs/JENKINS_SETUP.md](docs/JENKINS_SETUP.md) for complete Jenkins configuration guide.**
 
-2. Create Jenkins pipeline job
-3. Point to `jenkins/Jenkinsfile`
-4. Run pipeline with parameters
+1. Install required Jenkins plugins (Pipeline, AWS Steps, Git)
+2. Configure AWS credentials in Jenkins (ID: `aws-credentials`)
+3. Create Jenkins pipeline job pointing to `jenkins/Jenkinsfile`
+4. Run pipeline with parameters:
+   - ACTION: plan/apply/destroy
+   - ENVIRONMENT: dev/staging/prod
+   - AUTO_APPROVE: false (recommended)
 
 ## Database Access
 

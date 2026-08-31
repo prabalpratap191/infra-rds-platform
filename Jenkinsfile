@@ -63,7 +63,12 @@ pipeline {
                 script {
                     echo "Setting up Terraform environment..."
                 }
-                
+                  withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                 sh '''
                     # Install Terraform if not present
                     if ! command -v terraform &> /dev/null; then
@@ -80,6 +85,7 @@ pipeline {
                     aws sts get-caller-identity
                     echo "AWS credentials verified"
                 '''
+                }
             }
         }
         
@@ -90,10 +96,12 @@ pipeline {
                         echo "Initializing Terraform..."
                     }
                     
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials'
-                    ]]) {
+                 withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                         sh '''
                             # Copy backend configuration
                             cp ../../backend.tf .
@@ -124,7 +132,12 @@ pipeline {
                     script {
                         echo "Validating Terraform configuration..."
                     }
-                    
+                    withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                     sh '''
                         terraform validate
                         echo "✓ Terraform configuration is valid"
@@ -134,6 +147,7 @@ pipeline {
                             echo "Run 'terraform fmt -recursive' to fix"
                         }
                     '''
+                }
                 }
             }
         }
@@ -148,10 +162,12 @@ pipeline {
                         echo "Creating Terraform execution plan..."
                     }
                     
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials'
-                    ]]) {
+                   withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                         sh '''
                             terraform plan \
                                 -var-file="terraform.tfvars" \
@@ -243,10 +259,12 @@ pipeline {
                         echo "WARNING: Destroying infrastructure in ${params.ENVIRONMENT}..."
                     }
                     
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials'
-                    ]]) {
+                   withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                         sh '''
                             terraform destroy \
                                 -var-file="terraform.tfvars" \
@@ -270,9 +288,11 @@ pipeline {
                     }
                     
                     withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials'
-                    ]]) {
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                         sh '''
                             terraform output -json > outputs.json
                             terraform output > outputs.txt
@@ -301,9 +321,11 @@ pipeline {
                     }
                     
                     withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials'
-                    ]]) {
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-user',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                         sh '''
                             chmod +x scripts/verify-deployment.sh
                             ./scripts/verify-deployment.sh ${ENVIRONMENT}
