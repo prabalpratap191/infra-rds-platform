@@ -1,0 +1,13 @@
+# ConfigMap for Notification Service Database Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-db-config
+  namespace: notification-service-ns
+data:
+  DB_HOST: "<RDS_ENDPOINT>"
+  DB_PORT: "5432"
+  DB_NAME: "notification_db"
+  DB_DRIVER: "org.postgresql.Driver"
+  DB_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
+  DB_SSL_MODE: "require"

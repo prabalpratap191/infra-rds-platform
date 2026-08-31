@@ -1,0 +1,14 @@
+# ConfigMap for Customer Service Database Configuration
+# Replace <RDS_ENDPOINT> with actual RDS endpoint from Terraform output
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: customer-db-config
+  namespace: customer-service-ns
+data:
+  DB_HOST: "<RDS_ENDPOINT>"  # Replace with: rds-platform-dev-postgres.xxxxxx.us-east-1.rds.amazonaws.com
+  DB_PORT: "5432"
+  DB_NAME: "customer_db"
+  DB_DRIVER: "org.postgresql.Driver"
+  DB_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
+  DB_SSL_MODE: "require"
