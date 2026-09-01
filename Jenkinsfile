@@ -332,8 +332,8 @@ pipeline {
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
                         sh '''
-                            chmod +x scripts/verify-deployment.sh
-                            ./scripts/verify-deployment.sh ${ENVIRONMENT}
+                            chmod +x ../scripts/verify-deployment.sh
+                            ../scripts/verify-deployment.sh ${ENVIRONMENT}
                         '''
                     }
                 }
